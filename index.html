@@ -150,7 +150,7 @@ async function init() {
 
   try {
     var res = await fetch(SB_URL + '/rest/v1/invitations?id=eq.' + encodeURIComponent(id) + '&select=*', {
-      headers: { 'apikey': SB_KEY }
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY }
     });
     if (!res.ok) throw new Error('HTTP ' + res.status);
     var rows = await res.json();
