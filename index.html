@@ -1336,6 +1336,120 @@ Client full
 Code · HTML 
 Index
 Code · HTML 
+1772645557652_image.png
+
+婚式程序开发 / client-full-current.html html 喜式-Project-V9.zip zip 阅读全部代码，这里继续开发。 目前： 请柬无法保存， 私信：消息区需要限高 + 输入框 sticky 底部 * * 请柬尺寸：顶部空需要压缩 * 导出请柬还是不能 19:23 诊断了四个界面问题并规划修复方案。 诊断了四个界面问题并规划修复方案。 Now I have a clear picture of all four bugs. Let me implement the fixes: Bug 1 & 4 — 请柬导出失败: inv-full has hardcoded
+
+pasted
+
+请柬打开是这
+
+宾客名单需要在邀请的页面下出现。
+
+宾客分组后，能否添加放在下面。这里不方便。而且要解决如何发给客人的问题，需要邮件还是手机号更好？微信号？什么能直接发送到？
+
+刚才我打开邀请表，填写了回执，rsvp看不到
+
+09:34
+
+诊断了邀请页面渲染、宾客列表集成和RSVP同步问题。
+诊断了邀请页面渲染、宾客列表集成和RSVP同步问题。
+让我先看当前代码状态，逐个解决：
+
+
+诊断RSVP同步问题并规划邀请流程优化方案。
+诊断RSVP同步问题并规划邀请流程优化方案。
+好的，我理清了所有问题。让我逐个解决：
+
+问题1: RSVP看不到 — 需要确认 invitation_rsvp 表有读取权限 问题2: 宾客名单在邀请页出现 — 移入请柬流程 问题3: 分组+添加更方便 — 每组下方直接添加 问题4: 如何发送 — 按组复制链接/系统分享
+
+先确认数据库：请去 Supabase SQL Editor 跑这个： https://supabase.com/dashboard/project/rfwylubcmglfvtishecc/sql/new
+
+sql
+-- 确保 invitation_rsvp 表存在且有正确权限
+CREATE TABLE IF NOT EXISTS invitation_rsvp (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  invitation_id TEXT,
+  client_id UUID,
+  guest_name TEXT,
+  status TEXT DEFAULT 'pending',
+  plus_ones INT DEFAULT 0,
+  dietary TEXT,
+  message TEXT,
+  reminder_count INT DEFAULT 0,
+  last_reminded TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE invitation_rsvp ENABLE ROW LEVEL SECURITY;
+
+-- 允许任何人读写（开发阶段）
+DROP POLICY IF EXISTS "rsvp_read" ON invitation_rsvp;
+DROP POLICY IF EXISTS "rsvp_write" ON invitation_rsvp;
+CREATE POLICY "rsvp_read" ON invitation_rsvp FOR SELECT USING (true);
+CREATE POLICY "rsvp_write" ON invitation_rsvp FOR INSERT WITH CHECK (true);
+CREATE POLICY "rsvp_update" ON invitation_rsvp FOR UPDATE USING (true);
+跑完告诉我结果，然后我改代码。
+
+1772646086920_image.png
+09:41
+
+I cannot provide a summary because the user prompt is empty. Please provide the user's actual question or request
+I cannot provide a summary because the user prompt is empty. Please provide the user's actual question or request
+表和权限都OK了。现在问题是 RSVP 提交后没检查返回值，可能静默失败了。让我修两个文件：
+
+
+I notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block which is in English, here is my summary: Debugged client ID handling and architected guest management restructuring
+I notice the user prompt is empty, so I cannot determine the primary language. However, based on the thinking block which is in English, here is my summary: Debugged client ID handling and architected guest management restructuring
+现在改 client-full.html — 把宾客管理移入请柬页面，加组内直接添加：
+
+
+Architected JavaScript functions for guest rendering and invitation management
+Architected JavaScript functions for guest rendering and invitation management
+Now add the JS functions for inline guest management and RSVP in invitation page:
+
+
+Orchestrated page initialization and function integration strategy
+Orchestrated page initialization and function integration strategy
+Now wire up invitationPage loading:
+
+
+Reconciled function refresh logic across guest management features
+Reconciled function refresh logic across guest management features
+Now make sure removeGuest also refreshes invitation page:
+
+
+Verified data type consistency across database layers
+Verified data type consistency across database layers
+Now verify everything:
+
+
+The user prompt is empty, so there is no primary language to identify. However, I'll provide a summary of the thinking block in English: Orchestrated clarification of modifications
+The user prompt is empty, so there is no primary language to identify. However, I'll provide a summary of the thinking block in English: Orchestrated clarification of modifications
+改了四个问题：
+
+1. 宾客管理移入请柬页 — 请柬设置页底部新增「👥 宾客分组」和「💌 RSVP 回执」两个区块。每组显示宾客列表，底部直接有姓名+关系输入框，点 + 立即添加，不用弹窗。
+
+2. 按组发送 — 每组有「📤 发送请柬」按钮，点击会复制最近生成的请柬链接+宾客名单。iOS 会弹系统分享（可选微信/短信/WhatsApp/邮件），其他设备自动复制链接。
+
+3. RSVP 修复 — 渲染器提交回执时加了错误检查，之前静默失败也显示"成功"。现在会正确报错。请柬页底部实时显示所有回执。
+
+4. 发送方式 — 手机上最方便的是复制链接 → 发微信/短信。WeChat API 需要企业认证（不适合个人开发），所以通过系统分享菜单间接发送。
+
+部署两步：
+
+bash
+# 1. Client app
+cp ~/Downloads/client-full.html client/client-full.html
+cp client/client-full.html client/ios/App/App/public/index.html
+2. GitHub Pages — 去 https://github.com/hammer-lab/xishi-inv/edit/main/index.html 全部替换 → Commit
+
+部署后测试：请柬设置页往下滚 → 建分组 → 加宾客 → 生成请柬 → 发送给自己 → 填回执 → 回请柬页看RSVP区块。
+
+Client full
+Code · HTML 
+Index
+Code · HTML 
 
 
 
@@ -1778,19 +1892,27 @@ async function submitRsvp(invId, clientId) {
   var status = attend === 'confirmed' ? 'confirmed' : attend === 'declined' ? 'declined' : 'later';
 
   try {
-    await fetch(SB_URL + '/rest/v1/invitation_rsvp', {
-      method: 'POST',
-      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
-      body: JSON.stringify({
-        invitation_id: invId || '',
+    var payload = {
+        invitation_id: invId || 'unknown',
         client_id: clientId || null,
         guest_name: name,
         status: status,
         plus_ones: parseInt(document.getElementById('rPlus').value) || 0,
         dietary: document.getElementById('rDiet').value || null,
         message: document.getElementById('rMsg').value.trim() || null
-      })
+    };
+    console.log('[RSVP] Submitting:', JSON.stringify(payload));
+    var res = await fetch(SB_URL + '/rest/v1/invitation_rsvp', {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
     });
+    if (!res.ok) {
+      var errText = await res.text();
+      console.error('[RSVP] FAIL:', res.status, errText);
+      throw new Error('HTTP ' + res.status);
+    }
+    console.log('[RSVP] OK');
 
     document.getElementById('rsvpForm').style.display = 'none';
     var ok = document.getElementById('rsvpOk');
