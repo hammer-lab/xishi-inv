@@ -447,7 +447,7 @@ async function submitRsvp(invId, clientId) {
     if (!res.ok) {
       var errText = await res.text();
       console.error('[RSVP] FAIL:', res.status, errText);
-      throw new Error('HTTP ' + res.status);
+      throw new Error('HTTP ' + res.status + ': ' + errText);
     }
     console.log('[RSVP] OK');
 
